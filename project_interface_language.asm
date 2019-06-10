@@ -22,10 +22,26 @@ STRING MACRO SSTRING
     INT 21H
 STRING ENDM
 
+STRINGLOOP MACRO SLMANY, SLSTRING
+    MOV CX, SLMANY
+    LEA DX, SLSTRING
+STRINGLOOP ENDM
+
+NUMBER MACRO NSTRING
+    MOV AH, 02H
+    MOV DL, NSTRING
+    INT 21H
+NUMBER ENDM  
+
 READKEY MACRO
     MOV AH, 00H
     INT 16H
 READKEY ENDM
+
+READNUM MACRO
+    MOV AH, 01H
+    INT 21H
+READNUM ENDM
 
 NEWPAGE MACRO NPPAGE
     MOV AH, 05H
@@ -40,7 +56,6 @@ NEWPAGE ENDM
  
 ;SEGMENT DATA
 .DATA
-    
     OPM0G DB "Ir a: $"
     OPM0E DB "Volver [S/N]: $"
     BLEFT DB "[$"
@@ -99,13 +114,47 @@ NEWPAGE ENDM
     DEV2 DB "Marcelino Canche Tun$"
     DEV3 DB "Luis M. Hau Cupul$"
     DEV4 DB "Hipolito Aban Noh$"
-    DEV5 DB "Jose A. Cano Hau$"  
+    DEV5 DB "Jose A. Cano Hau$"
+    
+    ;TMPS, NUMBERS & MORE
+    INITALFA DB 65, "$"
+    INITNUM DB 48, "$"
+    INITHUND DB 1
+    SPACE DB " $"
+    TMP0 DW ?
+    TMP1 DB ?
+    TMP2 DB ?
+    TMP3 DB ?
+    TMP4 DB ?
+    
+    TNUMBER1 DB "Numero 1: $"
+    TNUMBER2 DB "Numero 2: $"
+    TRESULT  DB "Resultado: $"
+    TMOD  DB "Residuo: $"
+    
+    HORIZ DB 149, "$"
+    VERTI DB 149,010,08, "$"
+    
+    MSJ2 DB 149,032,'$'       
+    MSJ3 DB 149,010,08,08,'$' 
+    MSJ4 DB 149,010,'$'
+    
+    EVEN DB "Es par...$"
+    ODD DB "Es impar...$"
+    NEUTRO DB "Es neutro...$"
+    
+    ZERO DB "Es cero...$"
+    POSITIVE DB "Es positivo...$"
+    NEGATIVE DB "Es negativo...$"
+    
+    ERRFAC DB "Resultado grande...$"  
     
 ;SEGMENT CODE
 .CODE
     MOV AX, @DATA
     MOV DS,AX
     
+MAIN PROC FAR    
 RELOAD:
     NEWPAGE 0     
     ;RED / WHITE - 0000 - 2479
@@ -212,6 +261,7 @@ RELOAD:
             
             ;##############  START MODULO    #############
                 ;SUMA DE DOS NUMEROS
+                CALL ADDITION
             ;################  END MODULO  ################
             
             LOCATION 0, 21, 34
@@ -228,6 +278,7 @@ RELOAD:
             
             ;##############  START MODULO    #############
                 ;RESTA DE DOS NUMEROS
+                CALL SUBTRACTION
             ;################  END MODULO  ################
             
             LOCATION 0, 21, 34
@@ -244,6 +295,7 @@ RELOAD:
             
             ;##############  START MODULO    #############
                 ;MULTIPLICACION DE DOS NUMEROS
+                CALL MULTIPLICATION
             ;################  END MODULO  ################
             
             LOCATION 0, 21, 34
@@ -259,6 +311,7 @@ RELOAD:
             
             ;##############  START MODULO    #############
                 ;DIVISION DE DOS NUMEROS
+                CALL DIVISION 
             ;################  END MODULO  ################
             
             LOCATION 0, 21, 34
@@ -274,11 +327,37 @@ RELOAD:
             
             ;##############  START MODULO    #############
                 ;FACTORIAL DE UN NUMEROS
+                CALL QUERYNUM1
+                CMP TMP1, 7
+                JG ERROR
+                MOV AX, 1
+                MOV BL, TMP1
+                MOV BH, 0
+                CALL FACTORIAL
+                MOV AX, BX
+                AAM
+                
+                ADD AL,30H
+
+                ADD AH,30H
+                
+                MOV TMP1, AH
+                    
+                MOV TMP2, AL
+                
+                NUMBER TMP1
+                NUMBER TMP2
+                
+                JMP PREXIT0
+                
+                ERROR:
+                    LOCATION 0, 9, 28
+                    STRING ERRFAC                    
             ;################  END MODULO  ################
-            
-            LOCATION 0, 21, 34
-            READKEY
-            JMP OP1MAIN         
+            PREXIT0:
+                LOCATION 0, 21, 34
+                READKEY
+                JMP OP1MAIN         
         
     OP2MAIN:
         NEWPAGE 0
@@ -328,6 +407,8 @@ RELOAD:
             
             ;##############  START MODULO    #############
                 ;IMPRIMIR DE A-Z
+                LOCATION 0, 10, 17
+                CALL ALFA
             ;################  END MODULO  ################
             
             LOCATION 0, 21, 34
@@ -344,6 +425,8 @@ RELOAD:
             
             ;##############  START MODULO    #############
                 ;IMPRIMIR HEXADECIMAL 0-F
+                LOCATION 0, 10, 17
+                CALL HEXA
             ;################  END MODULO  ################
             
             LOCATION 0, 21, 34
@@ -360,11 +443,13 @@ RELOAD:
             
             ;##############  START MODULO    #############
                 ;IMPRIMIR DE 1-100
+                LOCATION 0, 10, 0
+                CALL HUND
             ;################  END MODULO  ################
             
             LOCATION 0, 21, 34
             READKEY
-            JMP OP2MAIN
+            JMP OP2MAIN;Fix bug end program
         
     OP3MAIN:
         NEWPAGE 0
@@ -410,11 +495,13 @@ RELOAD:
             
             ;##############  START MODULO    #############
                 ;NUMERO PAR, IMPAR O NEUTRO
+                CALL EVEODDNEU
             ;################  END MODULO  ################
             
-            LOCATION 0, 21, 34
-            READKEY
-            JMP OP3MAIN
+            PREXIT1:
+                LOCATION 0, 21, 34
+                READKEY
+                JMP OP3MAIN
             
         OP3SUB2:
             NEWPAGE 0
@@ -426,11 +513,13 @@ RELOAD:
             
             ;##############  START MODULO    #############
                 ;NUMERO PASITIVO, NEGATIVO O CERO
+                CALL POSNEGZE
             ;################  END MODULO  ################
             
-            LOCATION 0, 21, 34
-            READKEY
-            JMP OP3MAIN
+            PREXIT2:
+                LOCATION 0, 21, 34
+                READKEY
+                JMP OP3MAIN
         
     OP4MAIN:
         NEWPAGE 0
@@ -484,6 +573,7 @@ RELOAD:
             
             ;##############  START MODULO    #############
                 ;RECTANGULO
+                CALL RECTANGLE 
             ;################  END MODULO  ################
             
             LOCATION 0, 21, 34
@@ -499,6 +589,7 @@ RELOAD:
             
             ;##############  START MODULO    #############
                 ;TRIANGULO
+                CALL TRIANGLE
             ;################  END MODULO  ################
             
             LOCATION 0, 21, 34
@@ -514,6 +605,7 @@ RELOAD:
             
             ;##############  START MODULO    #############
                 ;ROMBO
+                CALL RHOMBUS
             ;################  END MODULO  ################
             
             LOCATION 0, 21, 34
@@ -529,6 +621,7 @@ RELOAD:
             
             ;##############  START MODULO    #############
                 ;TRAPECIO
+                CALL TRAPEZE
             ;################  END MODULO  ################
             
             LOCATION 0, 21, 34
@@ -657,4 +750,6 @@ RELOAD:
     ENDPROGRAM:     
         MOV AH, 4CH
         INT 21H
+MAIN ENDP
+INCLUDE modules.asm
 END
