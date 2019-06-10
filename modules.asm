@@ -25,6 +25,8 @@ REGISTER PROC NEAR
     MOV AH, 0                              
     MOV AL, TMP1
     MOV BL, TMP2
+    
+    RET
 REGISTER ENDP
 
 ;Impresion

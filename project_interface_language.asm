@@ -80,7 +80,7 @@ NEWPAGE ENDM
     OP2M1 DB "[2] Resta de dos numeros$"
     OP3M1 DB "[3] Multiplicacion de dos numeros$"
     OP4M1 DB "[4] Division de dos numeros$"
-    OP5M1 DB "[6] Factorial de un numero$"
+    OP5M1 DB "[5] Factorial de un numero$"
     
     ;MENU 2 - OP2
     OP1M2 DB "[1] Imprimir el alfabeto completo de la A a la Z$"
@@ -162,6 +162,8 @@ RELOAD:
     ;BLACK / WHITE 0309 - 1969
     BACKGROUND 00001111B, 0309H, 1345H
     ;TEXTS
+    LOCATION 0, 1, 19
+    STRING INSTITUTION
     LOCATION 0, 5, 28
     STRING OP1M0
     LOCATION 0, 7, 28
@@ -334,7 +336,9 @@ RELOAD:
                 MOV BL, TMP1
                 MOV BH, 0
                 CALL FACTORIAL
-                MOV AX, BX
+                MOV TMP0, AX
+                
+                MOV AX, TMP0
                 AAM
                 
                 ADD AL,30H
